@@ -16,10 +16,15 @@ cabal-version:       >=1.10
 
 executable cabal-analysis
   main-is:             Main.hs
-  -- other-modules:       
+  other-modules:       Types,
+                       Repository,
+                       Packages,
+                       Versions,
+                       Variants
   build-depends:       base,
                        containers,
                        mtl,
+                       transformers,
                        Cabal,
                        hackage-db,
                        directory,

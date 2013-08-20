@@ -15,14 +15,17 @@ type SourcePackage = FilePath
 
 type PackageName   = String
 type VersionNumber = Version.Version
+type PackageDescription = String
 data Configuration = Configuration FlagAssignment Platform CompilerId deriving (Show,Read)
+type PackageDependency = PackageName
 type ModuleName = String
 
-data Package = Package PackageName deriving (Show,Read)
-data Version = Version Package VersionNumber deriving (Show,Read)
-data Variant = Variant Version Configuration [Package]
+data Package  = Package PackageName deriving (Show,Read)
+data Version  = Version Package VersionNumber deriving (Show,Read)
+data Variant  = Variant Version Configuration [PackageDependency] deriving (Show,Read)
 data Instance = Instance Variant [Instance]
-data Module = Module Instance ModuleName
+data Module   = Module Instance ModuleName
 
 type PackageNode = Node
 type VersionNode = Node
+type VariantNode = Node
