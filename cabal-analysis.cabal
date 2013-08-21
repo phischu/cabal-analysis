@@ -16,7 +16,8 @@ cabal-version:       >=1.10
 
 executable cabal-analysis
   main-is:             Main.hs
-  other-modules:       Types,
+  other-modules:       Database
+                       Types,
                        Repository,
                        Packages,
                        Versions,

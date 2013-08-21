@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Main where
 
+import Database (resetDatabase)
 import Types (Repository)
 import Repository (loadRepository)
 import Packages (packagePG)
@@ -27,4 +28,5 @@ masterpipe repository =
 main ::IO ()
 main = do
     repository <- loadRepository
+    resetDatabase
     defaultRunNeoT (runProxy ((const (runPG (masterpipe repository)) >-> (hoist (lift . lift) .) printD))) >>= print
