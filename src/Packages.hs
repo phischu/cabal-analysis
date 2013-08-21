@@ -8,7 +8,6 @@ import Database.PipesGremlin (PG,scatter)
 
 import Data.Aeson (toJSON)
 
-import Control.Monad ((>=>))
 import Control.Monad.Trans (lift)
 
 import Data.Map (keys)

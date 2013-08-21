@@ -2,9 +2,7 @@
 module Targets where
 
 import Types (
-    Repository,
-    Package(Package),PackageNode,
-    Version(Version),VersionNumber,VersionNode,
+    Repository,PackageNode,
     Variant(Variant),VariantNode,
     PackageDescription,Configuration(Configuration),
     FinalizedPackageDescription,
@@ -16,28 +14,17 @@ import Packages (insertPackage)
 import Web.Neo (NeoT,newNode,addNodeLabel,setNodeProperty,newEdge)
 import Database.PipesGremlin (PG,scatter,gather,has,strain,nodesByLabel,nodeProperty)
 
-import Data.Aeson (toJSON,fromJSON)
+import Data.Aeson (toJSON)
 
-import Data.Version (showVersion)
-import qualified Data.Version as V (Version(Version))
-import Distribution.PackageDescription (
-    GenericPackageDescription,FlagAssignment,
-    library,targetBuildDepends,libBuildInfo,buildDepends)
-import qualified Distribution.PackageDescription as Finalized (PackageDescription)
-import Distribution.PackageDescription.Parse (readPackageDescription)
+import Distribution.PackageDescription (library,targetBuildDepends,libBuildInfo,buildDepends)
 import Distribution.PackageDescription.Configuration (finalizePackageDescription)
-import Distribution.Verbosity (silent)
-import Distribution.System (Platform(Platform),Arch(I386),OS(Linux))
-import Distribution.Compiler (CompilerId(CompilerId),CompilerFlavor(GHC))
 import Distribution.Package (Dependency(Dependency),PackageName(PackageName))
 
-import Control.Monad (forM,guard,(>=>))
-import Control.Monad.IO.Class (MonadIO,liftIO)
+import Control.Monad (forM_,guard,(>=>))
+import Control.Monad.IO.Class (MonadIO)
 import Control.Monad.Trans (lift)
 
-import Data.Map (keys,(!))
 import Data.Maybe (maybeToList)
-import Data.Text (pack)
 import Data.List (nub)
 
 targetPG :: (MonadIO m) => Repository -> (Variant,VariantNode) -> PG m (Target,TargetNode)
@@ -46,7 +33,7 @@ targetPG repository (variant,variantnode) = do
     target@(Target _ targettype dependencies) <- targets repository variant >>= scatter
 
     targetnode <- lift (insertTarget targettype variantnode)
-    forM dependencies (findOrCreateDependency >=> lift . (newEdge "PACKAGEDEPENDENCY" targetnode))
+    forM_ dependencies (findOrCreateDependency >=> lift . (newEdge "PACKAGEDEPENDENCY" targetnode))
 
     return (target,targetnode)
 
@@ -87,7 +74,7 @@ insertTarget targettype variantnode = do
     targetnode <- newNode
     addNodeLabel "Target" targetnode
     setNodeProperty "targettype" (toJSON (show targettype)) targetnode
-    newEdge "TARGET" variantnode targetnode
+    _ <- newEdge "TARGET" variantnode targetnode
     return targetnode
 
 findOrCreateDependency :: (Monad m) => PackageDependency -> PG m PackageNode
@@ -96,7 +83,7 @@ findOrCreateDependency packagename = do
     case packages of
         []            -> lift (insertPackage packagename)
         [packagenode] -> return packagenode
-        packagenodes  -> error "Multiple packagenodes with the same packagename!"
+        _             -> error "Multiple packagenodes with the same packagename!"
 
 findPackage :: (Monad m) => String -> PG m PackageNode
 findPackage packagename =

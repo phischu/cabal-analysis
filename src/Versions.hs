@@ -32,5 +32,5 @@ insertVersion versionnumber packagenode = do
     versionnode <- newNode
     addNodeLabel "Version" versionnode
     setNodeProperty "versionnumber" (toJSON (showVersion versionnumber)) versionnode
-    newEdge "VERSION" packagenode versionnode
+    _ <- newEdge "VERSION" packagenode versionnode
     return versionnode

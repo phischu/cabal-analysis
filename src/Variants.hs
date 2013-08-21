@@ -4,7 +4,7 @@ module Variants where
 import Types (
     Repository,
     Package(Package),
-    Version(Version),VersionNumber,VersionNode,
+    Version(Version),VersionNode,
     Variant(Variant),VariantNode,
     PackageDescription,Configuration(Configuration),
     FinalizedPackageDescription)
@@ -14,9 +14,8 @@ import Database.PipesGremlin (PG,scatter)
 
 import Data.Aeson (toJSON)
 
-import Data.Version (showVersion)
 import qualified Data.Version as V (Version(Version))
-import Distribution.PackageDescription (GenericPackageDescription,FlagAssignment)
+import Distribution.PackageDescription (FlagAssignment)
 import Distribution.PackageDescription.Parse (readPackageDescription)
 import Distribution.PackageDescription.Configuration (finalizePackageDescription)
 import Distribution.Verbosity (silent)
@@ -28,7 +27,7 @@ import Control.Monad (forM)
 import Control.Monad.IO.Class (MonadIO,liftIO)
 import Control.Monad.Trans (lift)
 
-import Data.Map (keys,(!))
+import Data.Map ((!))
 
 variantPG :: (MonadIO m) => Repository -> (Version,VersionNode) -> PG m (Variant,VariantNode)
 variantPG repository (version,versionnode) = do
@@ -73,5 +72,5 @@ insertVariant configuration versionnode = do
     variantnode <- newNode
     addNodeLabel "Variant" variantnode
     setNodeProperty "configuration" (toJSON (show configuration)) variantnode
-    newEdge "VARIANT" versionnode variantnode
+    _ <- newEdge "VARIANT" versionnode variantnode
     return variantnode

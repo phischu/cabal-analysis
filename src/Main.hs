@@ -14,7 +14,7 @@ import Web.Neo (defaultRunNeoT)
 
 import Control.Monad.IO.Class (MonadIO)
 
-import Control.Proxy (runProxy,(>->),printD,hoist,lift,(>=>))
+import Control.Proxy (runProxy,(>->),printD,hoist,lift)
 
 masterpipe :: (MonadIO m) => Repository -> PG m String
 masterpipe repository =

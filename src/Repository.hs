@@ -3,7 +3,6 @@ module Repository where
 import Types (Repository,PackageName,VersionNumber)
 
 import Data.Version (showVersion)
-import qualified Data.Version as Version (Version(Version))
 
 import Distribution.Hackage.DB (readHackage')
 
@@ -33,10 +32,10 @@ availablePackages = do
     exists <- doesFileExist "data/00-index.tar"
     when (not exists) (void (do
         createDirectoryIfMissing True "data/"
-        rawSystem "wget" [
+        void (rawSystem "wget" [
             "-nv",
             "-O","data/00-index.tar.gz",
-            "hackage.haskell.org/packages/archive/00-index.tar"]
+            "hackage.haskell.org/packages/archive/00-index.tar"])
         rawSystem "gunzip" ["-f","data/00-index.tar.gz"]))
     hackage <- readHackage' "data/00-index.tar"
     return (Map.map Map.keys hackage)
