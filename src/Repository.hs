@@ -17,7 +17,7 @@ import qualified Data.Map as Map (
     map,keys,filterWithKey,toList,fromList)
 
 packagesDigest :: [PackageName]
-packagesDigest = ["base"]
+packagesDigest = ["base","syb","ghc-prim","integer","rts","integer-simple"]
 
 type Index = Map PackageName [VersionNumber]
 
