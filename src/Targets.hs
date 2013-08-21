@@ -96,11 +96,9 @@ findOrCreateDependency packagename = do
     case packages of
         []            -> lift (insertPackage packagename)
         [packagenode] -> return packagenode
-        packagenodes  -> scatter packagenodes -- Might happen during testing
+        packagenodes  -> error "Multiple packagenodes with the same packagename!"
 
 findPackage :: (Monad m) => String -> PG m PackageNode
 findPackage packagename =
     nodesByLabel "Package" >>=
-    has (
-        nodeProperty "packagename" >=>
-        strain (== (toJSON packagename)))
+    has (nodeProperty "packagename" >=> strain (== (toJSON packagename)))
