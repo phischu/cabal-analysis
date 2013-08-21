@@ -16,7 +16,16 @@ import qualified Data.Map as Map (
     map,keys,filterWithKey,toList,fromList)
 
 packagesDigest :: [PackageName]
-packagesDigest = ["base","syb","ghc-prim","integer","rts","integer-simple"]
+packagesDigest = packagesThatMightComeWithGHC
+
+smallPackageSelection :: [PackageName]
+smallPackageSelection = ["base","syb","ghc-prim","integer","rts","integer-simple"]
+
+packagesThatMightComeWithGHC :: [PackageName]
+packagesThatMightComeWithGHC = smallPackageSelection ++ [
+    "array","bytestring","Cabal","containers","deepseq","directory","filepath",
+    "haskell2010","haskell98","hpc","old-locale","old-time","pretty","process",
+    "template-haskell","time","unix","Win32"]
 
 type Index = Map PackageName [VersionNumber]
 
