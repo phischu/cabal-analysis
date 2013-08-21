@@ -8,7 +8,7 @@ import Versions (versionPG)
 import Variants (variantPG)
 import Targets (targetPG)
 
-import Database.PipesGremlin (PG,runPG)
+import Database.PipesGremlin (PG,runPG,gather,scatter)
 import Web.Neo (defaultRunNeoT)
 
 import Control.Monad.IO.Class (MonadIO)
@@ -17,7 +17,8 @@ import Control.Proxy (runProxy,(>->),printD,hoist,lift,(>=>))
 
 masterpipe :: (MonadIO m) => Repository -> PG m String
 masterpipe repository =
-    packagePG repository >>=
+    gather (packagePG repository) >>=
+    scatter >>=
     versionPG repository >>=
     variantPG repository >>=
     targetPG  repository >>=

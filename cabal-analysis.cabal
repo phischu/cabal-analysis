@@ -32,6 +32,7 @@ executable cabal-analysis
                        process,
                        pipes,
                        aeson,
+                       text,
                        haskell-neo,
                        pipes-gremlin
   hs-source-dirs:      src

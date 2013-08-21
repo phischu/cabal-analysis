@@ -3,7 +3,7 @@ module Targets where
 
 import Types (
     Repository,
-    Package(Package),
+    Package(Package),PackageNode,
     Version(Version),VersionNumber,VersionNode,
     Variant(Variant),VariantNode,
     PackageDescription,Configuration(Configuration),
@@ -11,11 +11,12 @@ import Types (
     Target(Target),TargetNode,
     TargetType(LibraryTarget),PackageDependency)
 import Variants (loadPackageDescription)
+import Packages (insertPackage)
 
 import Web.Neo (NeoT,newNode,addNodeLabel,setNodeProperty,newEdge)
-import Database.PipesGremlin (PG,scatter)
+import Database.PipesGremlin (PG,scatter,gather,has,strain,nodesByLabel,nodeProperty)
 
-import Data.Aeson (toJSON)
+import Data.Aeson (toJSON,fromJSON)
 
 import Data.Version (showVersion)
 import qualified Data.Version as V (Version(Version))
@@ -30,19 +31,22 @@ import Distribution.System (Platform(Platform),Arch(I386),OS(Linux))
 import Distribution.Compiler (CompilerId(CompilerId),CompilerFlavor(GHC))
 import Distribution.Package (Dependency(Dependency),PackageName(PackageName))
 
-import Control.Monad (forM,guard)
+import Control.Monad (forM,guard,(>=>))
 import Control.Monad.IO.Class (MonadIO,liftIO)
 import Control.Monad.Trans (lift)
 
 import Data.Map (keys,(!))
 import Data.Maybe (maybeToList)
+import Data.Text (pack)
+import Data.List (nub)
 
 targetPG :: (MonadIO m) => Repository -> (Variant,VariantNode) -> PG m (Target,TargetNode)
 targetPG repository (variant,variantnode) = do
 
     target@(Target _ targettype dependencies) <- targets repository variant >>= scatter
 
-    targetnode <- lift (insertTarget targettype dependencies variantnode)
+    targetnode <- lift (insertTarget targettype variantnode)
+    forM dependencies (findOrCreateDependency >=> lift . (newEdge "PACKAGEDEPENDENCY" targetnode))
 
     return (target,targetnode)
 
@@ -74,14 +78,29 @@ libraryDependencies :: FinalizedPackageDescription -> Maybe [PackageDependency]
 libraryDependencies finalizedPackageDescription = do
     lib <- library finalizedPackageDescription
     let cabalDependencies = targetBuildDepends (libBuildInfo lib) ++ buildDepends finalizedPackageDescription
-    return (do
+    return (nub (do
         Dependency (PackageName packagename) _ <- cabalDependencies
-        return packagename)
+        return packagename))
 
-insertTarget :: (Monad m) => TargetType -> [PackageDependency] -> VariantNode -> NeoT m TargetNode
-insertTarget targettype dependencies variantnode = do
+insertTarget :: (Monad m) => TargetType -> VariantNode -> NeoT m TargetNode
+insertTarget targettype variantnode = do
     targetnode <- newNode
     addNodeLabel "Target" targetnode
     setNodeProperty "targettype" (toJSON (show targettype)) targetnode
     newEdge "TARGET" variantnode targetnode
     return targetnode
+
+findOrCreateDependency :: (Monad m) => PackageDependency -> PG m PackageNode
+findOrCreateDependency packagename = do
+    packages <- gather (findPackage packagename)
+    case packages of
+        []            -> lift (insertPackage packagename)
+        [packagenode] -> return packagenode
+        packagenodes  -> scatter packagenodes -- Might happen during testing
+
+findPackage :: (Monad m) => String -> PG m PackageNode
+findPackage packagename =
+    nodesByLabel "Package" >>=
+    has (
+        nodeProperty "packagename" >=>
+        strain (== (toJSON packagename)))
