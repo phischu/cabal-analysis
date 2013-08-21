@@ -20,7 +20,8 @@ executable cabal-analysis
                        Repository,
                        Packages,
                        Versions,
-                       Variants
+                       Variants,
+                       Targets
   build-depends:       base,
                        containers,
                        mtl,

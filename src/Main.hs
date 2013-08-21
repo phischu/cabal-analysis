@@ -6,6 +6,7 @@ import Repository (loadRepository)
 import Packages (packagePG)
 import Versions (versionPG)
 import Variants (variantPG)
+import Targets (targetPG)
 
 import Database.PipesGremlin (PG,runPG)
 import Web.Neo (defaultRunNeoT)
@@ -19,6 +20,7 @@ masterpipe repository =
     packagePG repository >>=
     versionPG repository >>=
     variantPG repository >>=
+    targetPG  repository >>=
     return . show
 
 main ::IO ()
