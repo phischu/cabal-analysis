@@ -86,7 +86,8 @@ packageDirectory packagename versionnumber = concat [
     "data/packages/",
     packagename,
     "/",
-    packageIdentifier packagename versionnumber]
+    packageIdentifier packagename versionnumber,
+    "/"]
 
 extractPackages :: Index -> IO Repository
 extractPackages index = do
