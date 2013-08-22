@@ -22,7 +22,8 @@ executable cabal-analysis
                        Packages,
                        Versions,
                        Variants,
-                       Targets
+                       Targets,
+                       Queries
   build-depends:       base,
                        containers,
                        mtl,

@@ -8,6 +8,7 @@ import Packages (packagePG)
 import Versions (versionPG)
 import Variants (variantPG)
 import Targets (targetPG)
+import Queries ()
 
 import Database.PipesGremlin (PG,runPG,gather,scatter)
 import Web.Neo (defaultRunNeoT)
