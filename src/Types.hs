@@ -21,16 +21,14 @@ data Configuration = Configuration FlagAssignment Platform CompilerId deriving (
 type FinalizedPackageDescription = Cabal.PackageDescription
 data TargetType = LibraryTarget deriving (Show,Read)
 type PackageDependency = PackageName
-type ModuleName = String
 
 data Package  = Package PackageName deriving (Show,Read)
 data Version  = Version Package VersionNumber deriving (Show,Read)
 data Variant  = Variant Version Configuration deriving (Show,Read)
 data Target   = Target Variant TargetType [PackageDependency] deriving (Show,Read)
-data Instance = Instance Target [Instance]
-data Module   = Module Instance ModuleName
 
-type PackageNode = Node
-type VersionNode = Node
-type VariantNode = Node
-type TargetNode  = Node
+type PackageNode  = Node
+type VersionNode  = Node
+type VariantNode  = Node
+type TargetNode   = Node
+type InstanceNode = Node
