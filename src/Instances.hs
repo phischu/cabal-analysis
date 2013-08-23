@@ -7,22 +7,27 @@ import Types (
     InstanceNode)
 
 import Web.Neo (NeoT,newNode,addNodeLabel,newEdge)
-import Database.PipesGremlin (PG,scatter,gather,has,strain,nodeProperty,nextLabeled)
+import Web.Neo.Internal (nodeId)
+import Database.PipesGremlin (PG,gather,has,strain,nodeProperty,nextLabeled)
 
 import Control.Monad (forM_,(>=>))
 import Control.Monad.Trans (lift)
 
-instancePG :: (Monad m) => TargetNode -> PG m InstanceNode
-instancePG targetnode = do
+import Data.Set (Set,member,insert)
 
-    existingInstances <- gather (return targetnode >>= nextLabeled "INSTANCE")
+instancePG :: (Monad m) => Set Integer -> TargetNode -> PG m InstanceNode
+instancePG visitedTargetNodeIds targetnode = do
 
-    if not (null existingInstances)
-        then scatter existingInstances
+    if nodeId targetnode `member` visitedTargetNodeIds
+
+        then return targetnode >>= nextLabeled "INSTANCE"
+
         else do
 
             packagedependencynodes <- gather (dependencies targetnode)
-            instancedependencies <- mapM (libraryTargets >=> instancePG) packagedependencynodes
+            instancedependencies <- mapM
+                (libraryTargets >=> instancePG (insert (nodeId targetnode) visitedTargetNodeIds))
+                packagedependencynodes
 
             instancenode <- lift (insertInstance instancedependencies targetnode)
 

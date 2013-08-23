@@ -16,6 +16,8 @@ import Web.Neo (defaultRunNeoT)
 
 import Control.Monad.IO.Class (MonadIO)
 
+import Data.Set (empty)
+
 import Control.Proxy (runProxy,(>->),printD,hoist,lift)
 
 masterpipe :: (MonadIO m) => Repository -> PG m String
@@ -26,7 +28,7 @@ masterpipe repository = gather (
     variantPG repository >>=
     targetPG  repository) >>
     nodesByLabel "Target" >>=
-    instancePG >>=
+    instancePG empty >>=
     return . show
 
 main ::IO ()
