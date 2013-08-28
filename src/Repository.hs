@@ -2,7 +2,7 @@ module Repository where
 
 import Types (Repository,PackageName,VersionNumber)
 
-import Data.Version (showVersion)
+import Data.Version (showVersion,Version(Version))
 
 import Distribution.Hackage.DB (readHackage')
 
@@ -13,7 +13,7 @@ import System.Cmd (rawSystem)
 import Control.Monad (when,forM,void)
 import Data.Map (Map)
 import qualified Data.Map as Map (
-    map,keys,filterWithKey,toList,fromList)
+    map,keys,filterWithKey,toList,fromList,union)
 
 packagesDigest :: [PackageName]
 packagesDigest = packagesThatMightBeInThePlatform
@@ -38,13 +38,14 @@ packagesThatMightBeInThePlatform = packagesThatMightComeWithGHC ++ [
 type Index = Map PackageName [VersionNumber]
 
 loadRepository :: IO Repository
-loadRepository = do
-    worldIndex <- availablePackages
-    let index = pruneIndex packagesDigest worldIndex
-    getPackages index
+loadRepository =
+    availablePackagesOnHackage >>=
+    return . pruneIndex packagesDigest >>=
+    return . Map.union packagesNotOnHackage >>=
+    getPackages
 
-availablePackages :: IO Index
-availablePackages = do
+availablePackagesOnHackage :: IO Index
+availablePackagesOnHackage = do
     putStrLn "Downloading Index ..."
     exists <- doesFileExist "data/00-index.tar"
     when (not exists) (void (do
@@ -59,6 +60,12 @@ availablePackages = do
 
 pruneIndex :: [PackageName] -> Index -> Index
 pruneIndex packagenames = Map.filterWithKey (\key _ -> key `elem` packagenames)
+
+packagesNotOnHackage :: Index
+packagesNotOnHackage = Map.fromList [
+    ("ghc-prim",[Version [0,3,0,0] []]),
+    ("integer-simple",[Version [0,1,0,1] []]),
+    ("rts",[Version [0] []])]
 
 getPackages :: Index -> IO Repository
 getPackages index = downloadPackages index >> extractPackages index
