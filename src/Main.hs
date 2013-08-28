@@ -11,28 +11,32 @@ import Targets (targetPG)
 import Instances (instancePG)
 import Queries ()
 
-import Database.PipesGremlin (PG,runPG,gather,scatter,nodesByLabel)
-import Web.Neo (defaultRunNeoT)
+import Database.PipesGremlin (PG,printPG,gather,scatter,nodesByLabel)
 
 import Control.Monad.IO.Class (MonadIO)
+import Control.Monad.Trans (lift)
+import Control.Monad.Trans.State (StateT,runStateT)
 
-import Data.Set (empty)
+import Data.Set (Set,empty)
 
-import Control.Proxy (runProxy,(>->),printD,hoist,lift)
-
-masterpipe :: (MonadIO m) => Repository -> PG m String
-masterpipe repository = gather (
+gatherTargets :: (MonadIO m) => Repository -> PG m [String]
+gatherTargets repository = gather (
     gather (packagePG repository) >>=
     scatter >>=
     versionPG repository >>=
     variantPG repository >>=
-    targetPG  repository) >>
-    nodesByLabel "Target" >>=
-    instancePG empty >>=
+    targetPG  repository >>=
+    return . show)
+
+gatherInstances :: (Monad m) => StateT (Set Integer) (PG m) String
+gatherInstances =
+    lift (nodesByLabel "Target") >>=
+    instancePG >>=
     return . show
 
 main ::IO ()
 main = do
     repository <- loadRepository
     resetDatabase
-    defaultRunNeoT (runProxy ((const (runPG (masterpipe repository)) >-> (hoist (lift . lift) .) printD))) >>= print
+    printPG (gatherTargets repository)
+    printPG (runStateT gatherInstances empty)

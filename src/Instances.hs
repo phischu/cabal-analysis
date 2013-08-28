@@ -12,24 +12,27 @@ import Database.PipesGremlin (PG,gather,has,strain,nodeProperty,nextLabeled)
 
 import Control.Monad (forM_,(>=>))
 import Control.Monad.Trans (lift)
+import Control.Monad.Trans.State (StateT,get)
 
-import Data.Set (Set,member,insert)
+import Data.Set (Set,member)
 
-instancePG :: (Monad m) => Set Integer -> TargetNode -> PG m InstanceNode
-instancePG visitedTargetNodeIds targetnode = do
+instancePG :: (Monad m) => TargetNode -> StateT (Set Integer) (PG m) InstanceNode
+instancePG targetnode = do
+
+    visitedTargetNodeIds <- get
 
     if nodeId targetnode `member` visitedTargetNodeIds
 
-        then return targetnode >>= nextLabeled "INSTANCE"
+        then lift (return targetnode >>= nextLabeled "INSTANCE")
 
         else do
 
-            packagedependencynodes <- gather (dependencies targetnode)
+            packagedependencynodes <- lift (gather (dependencies targetnode))
             instancedependencies <- mapM
-                (libraryTargets >=> instancePG (insert (nodeId targetnode) visitedTargetNodeIds))
+                (lift . libraryTargets >=> instancePG)
                 packagedependencynodes
 
-            instancenode <- lift (insertInstance instancedependencies targetnode)
+            instancenode <- lift (lift (insertInstance instancedependencies targetnode))
 
             return instancenode
 
