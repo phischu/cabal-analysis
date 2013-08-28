@@ -12,14 +12,15 @@ import Database.PipesGremlin (PG,gather,has,strain,nodeProperty,nextLabeled)
 
 import Control.Monad (forM_,(>=>))
 import Control.Monad.Trans (lift)
-import Control.Monad.Trans.State (StateT,get)
+import Control.Monad.Trans.State (StateT,get,put)
 
-import Data.Set (Set,member)
+import Data.Set (Set,member,insert)
 
 instancePG :: (Monad m) => TargetNode -> StateT (Set Integer) (PG m) InstanceNode
 instancePG targetnode = do
 
     visitedTargetNodeIds <- get
+    put (insert (nodeId targetnode) visitedTargetNodeIds)
 
     if nodeId targetnode `member` visitedTargetNodeIds
 
