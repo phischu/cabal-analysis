@@ -62,7 +62,7 @@ defaultPlatform :: Platform
 defaultPlatform = Platform I386 Linux
 
 defaultCompiler :: CompilerId
-defaultCompiler = CompilerId GHC (V.Version [7,6,2] [])
+defaultCompiler = CompilerId GHC (V.Version [7,6,3] [])
 
 cabalConfigure :: PackageDescription -> Either [Dependency] (FinalizedPackageDescription,FlagAssignment)
 cabalConfigure = finalizePackageDescription [] (const True) defaultPlatform defaultCompiler []
