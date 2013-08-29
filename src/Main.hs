@@ -14,7 +14,6 @@ import Queries ()
 import Database.PipesGremlin (PG,printPG,gather,scatter,nodesByLabel)
 
 import Control.Monad.IO.Class (MonadIO)
-import Control.Monad.Trans (lift)
 import Control.Monad.Trans.State (StateT,runStateT)
 
 import Data.Set (Set,empty)
@@ -28,9 +27,9 @@ gatherTargets repository = gather (
     targetPG  repository >>=
     return . show)
 
-gatherInstances :: (Monad m) => StateT (Set Integer) (PG m) String
+gatherInstances :: (Monad m) => PG (StateT (Set Integer) m) String
 gatherInstances =
-    lift (nodesByLabel "Target") >>=
+    nodesByLabel "Target" >>=
     instancePG >>=
     return . show
 
@@ -39,4 +38,5 @@ main = do
     repository <- loadRepository
     resetDatabase
     printPG (gatherTargets repository)
-    printPG (runStateT gatherInstances empty)
+    runStateT (printPG gatherInstances) empty >>= print
+    return ()

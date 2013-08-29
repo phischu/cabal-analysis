@@ -16,24 +16,24 @@ import Control.Monad.Trans.State (StateT,get,put)
 
 import Data.Set (Set,member,insert)
 
-instancePG :: (Monad m) => TargetNode -> StateT (Set Integer) (PG m) InstanceNode
+instancePG :: (Monad m) => TargetNode ->  PG (StateT (Set Integer) m) InstanceNode
 instancePG targetnode = do
 
-    visitedTargetNodeIds <- get
-    put (insert (nodeId targetnode) visitedTargetNodeIds)
+    visitedTargetNodeIds <- lift ( lift (lift get))
+    lift (lift (lift (put (insert (nodeId targetnode) visitedTargetNodeIds))))
 
     if nodeId targetnode `member` visitedTargetNodeIds
 
-        then lift (return targetnode >>= nextLabeled "INSTANCE")
+        then return targetnode >>= nextLabeled "INSTANCE"
 
         else do
 
-            packagedependencynodes <- lift (gather (dependencies targetnode))
+            packagedependencynodes <- gather (dependencies targetnode)
             instancedependencies <- mapM
-                (lift . libraryTargets >=> instancePG)
+                (libraryTargets >=> instancePG)
                 packagedependencynodes
 
-            instancenode <- lift (lift (insertInstance instancedependencies targetnode))
+            instancenode <- lift (insertInstance instancedependencies targetnode)
 
             return instancenode
 
