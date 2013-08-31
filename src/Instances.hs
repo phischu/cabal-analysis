@@ -8,13 +8,14 @@ import Types (
 
 import Web.Neo (NeoT,newNode,addNodeLabel,newEdge)
 import Web.Neo.Internal (nodeId)
-import Database.PipesGremlin (PG,gather,has,strain,nodeProperty,nextLabeled)
+import Database.PipesGremlin (PG,gather,has,strain,nodeProperty,nextLabeled,previousLabeled)
 
-import Control.Monad (forM_,(>=>))
+import Control.Monad (forM_,(>=>),guard)
 import Control.Monad.Trans (lift)
 import Control.Monad.Trans.State (StateT,get,put)
 
 import Data.Set (Set,member,insert)
+import Data.List (nub)
 
 instancePG :: (Monad m) => TargetNode ->  PG (StateT (Set Integer) m) InstanceNode
 instancePG targetnode = do
@@ -33,6 +34,8 @@ instancePG targetnode = do
                 (libraryTargets >=> instancePG)
                 packagedependencynodes
 
+            containsNoDuplicatePackages instancedependencies targetnode >>= guard
+
             instancenode <- lift (insertInstance instancedependencies targetnode)
 
             return instancenode
@@ -46,6 +49,20 @@ libraryTargets =
     nextLabeled "VARIANT" >=>
     nextLabeled "TARGET" >=>
     has (nodeProperty "targettype" >=> strain (== ("LibraryTarget" :: String)))
+
+containsNoDuplicatePackages :: (Monad m) => [InstanceNode] -> TargetNode -> PG m Bool
+containsNoDuplicatePackages instancedependencies targetnode = do
+    targetnodes <- mapM (previousLabeled "INSTANCE") instancedependencies
+    let uniqueTargets = nub (targetnode:targetnodes)
+    packagenames <- mapM targetPackageName uniqueTargets
+    return (nub packagenames == packagenames)
+
+targetPackageName :: (Monad m) => TargetNode -> PG m String
+targetPackageName =
+    previousLabeled "TARGET" >=>
+    previousLabeled "VARIANT" >=>
+    previousLabeled "VERSION" >=>
+    nodeProperty "packagename"
 
 insertInstance :: (Monad m) => [InstanceNode] -> TargetNode -> NeoT m InstanceNode
 insertInstance instancedependencies targetnode = do
