@@ -8,7 +8,7 @@ import Types (
 
 import Web.Neo (NeoT,newNode,addNodeLabel,newEdge)
 import Web.Neo.Internal (nodeId)
-import Database.PipesGremlin (PG,gather,has,strain,nodeProperty,nextLabeled,previousLabeled)
+import Database.PipesGremlin (PG,gather,has,strain,nodeProperty,followingLabeled,previousLabeled)
 
 import Control.Monad (forM_,(>=>),guard)
 import Control.Monad.Trans (lift)
@@ -25,7 +25,7 @@ instancePG targetnode = do
 
     if nodeId targetnode `member` visitedTargetNodeIds
 
-        then return targetnode >>= nextLabeled "INSTANCE"
+        then return targetnode >>= followingLabeled "INSTANCE"
 
         else do
 
@@ -41,13 +41,13 @@ instancePG targetnode = do
             return instancenode
 
 dependencies :: (Monad m) => TargetNode -> PG m PackageNode
-dependencies = nextLabeled "PACKAGEDEPENDENCY"
+dependencies = followingLabeled "PACKAGEDEPENDENCY"
 
 libraryTargets :: (Monad m) => PackageNode -> PG m TargetNode
 libraryTargets =
-    nextLabeled "VERSION" >=>
-    nextLabeled "VARIANT" >=>
-    nextLabeled "TARGET" >=>
+    followingLabeled "VERSION" >=>
+    followingLabeled "VARIANT" >=>
+    followingLabeled "TARGET" >=>
     has (nodeProperty "targettype" >=> strain (== ("LibraryTarget" :: String)))
 
 containsNoDuplicatePackages :: (Monad m) => [InstanceNode] -> TargetNode -> PG m Bool

@@ -5,7 +5,7 @@ import Database.PipesGremlin (
     printPG,PG,
     gather,hasnot,
     nodesByLabel,outEdgeLabeled,nodeProperty,
-    previousLabeled,nextLabeled,has,strain)
+    previousLabeled,has,strain)
 import Web.Neo (Node)
 
 import Control.Monad ((>=>))
