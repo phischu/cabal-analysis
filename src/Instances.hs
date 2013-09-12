@@ -9,6 +9,8 @@ import Types (
 import Web.Neo (NeoT,newNode,addNodeLabel,newEdge)
 import Web.Neo.Internal (nodeId)
 import Database.PipesGremlin (PG,gather,has,strain,nodeProperty,followingLabeled,previousLabeled)
+import Pipes (ListT(Select,enumerate),(>->))
+import qualified Pipes.Prelude as Pipes (take)
 
 import Control.Monad (forM_,(>=>),guard)
 import Control.Monad.Trans (lift)
@@ -18,7 +20,7 @@ import Data.Set (Set,member,insert)
 import Data.List (nub)
 
 instancePG :: (Monad m) => TargetNode ->  PG (StateT (Set Integer) m) InstanceNode
-instancePG targetnode = do
+instancePG targetnode = limit 5 (do
 
     visitedTargetNodeIds <- lift ( lift (lift get))
     lift (lift (lift (put (insert (nodeId targetnode) visitedTargetNodeIds))))
@@ -38,7 +40,7 @@ instancePG targetnode = do
 
             instancenode <- lift (insertInstance instancedependencies targetnode)
 
-            return instancenode
+            return instancenode)
 
 dependencies :: (Monad m) => TargetNode -> PG m PackageNode
 dependencies = followingLabeled "PACKAGEDEPENDENCY"
@@ -71,3 +73,6 @@ insertInstance instancedependencies targetnode = do
     forM_ instancedependencies (newEdge "INSTANCEDEPENDENCY" instancenode)
     _ <- newEdge "INSTANCE" targetnode instancenode
     return instancenode
+
+limit :: (Monad m) => Int -> PG  m a -> PG m a
+limit n pg = Select (enumerate pg >-> Pipes.take n)
