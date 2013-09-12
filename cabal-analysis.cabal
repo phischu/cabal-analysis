@@ -24,7 +24,9 @@ executable cabal-analysis
                        Variants,
                        Targets,
                        Queries,
-                       Instances
+                       Instances,
+                       Modules,
+                       Modules.JSON
   build-depends:       base,
                        containers,
                        mtl,
@@ -34,8 +36,9 @@ executable cabal-analysis
                        directory,
                        process,
                        pipes,
-                       aeson,
+                       aeson ==0.6.2.0,
                        text,
+                       haskell-src-exts,
                        haskell-neo,
                        pipes-gremlin
   hs-source-dirs:      src

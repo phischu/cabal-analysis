@@ -9,6 +9,7 @@ import Versions (versionPG)
 import Variants (variantPG)
 import Targets (targetPG)
 import Instances (instancePG)
+import Modules (modulePG)
 import Queries ()
 
 import Database.PipesGremlin (PG,printPG,gather,scatter,nodesByLabel)
@@ -33,10 +34,17 @@ gatherInstances =
     instancePG >>=
     return . show
 
+gatherModules :: (Monad m) => Repository -> PG m String
+gatherModules repository =
+    nodesByLabel "Instance" >>=
+    modulePG repository >>=
+    return . show
+
 main ::IO ()
 main = do
     repository <- loadRepository
     resetDatabase
     printPG (gatherTargets repository)
     runStateT (printPG gatherInstances) empty >>= print
+    printPG (gatherModules repository)
     return ()
