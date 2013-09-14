@@ -34,9 +34,13 @@ import Language.Preprocessor.Cpphs
 import Control.Exception (evaluate)
 import Control.DeepSeq (force)
 
+import Language.Haskell.Exts (parseFileContentsWithMode,SrcLoc)
+import Language.Haskell.Exts.Fixity (baseFixities)
+import Language.Haskell.Exts.Parser (ParseMode(..),defaultParseMode,ParseResult(ParseOk,ParseFailed))
+
 import Control.Error (
     runEitherT,EitherT,left,
-    runMaybeT,hoistMaybe,
+    runMaybeT,hoistMaybe,hoistEither,
     scriptIO,fmapLT)
 
 import Data.Map ((!))
@@ -74,15 +78,16 @@ modules repository inst = runMaybeT (do
 
     forM modulenames (\modulename -> runEitherT (do
 
-        modulefilepath <- lookupModuleName repository version targetSection modulename
-        modulefile <- preprocess targetSection modulefilepath
-        moduleast <- parse modulefile
+        modulepath <- lookupModuleName repository version targetSection modulename
+        modulefile <- preprocess targetSection modulepath
+        moduleast <- parse modulepath modulefile
         return (Module inst modulename moduleast))))
 
 data ModuleError =
     ModuleFileNotFound |
     MultipleModuleFilesFound |
-    PreprocessorError String
+    PreprocessorError String |
+    ParserError String
       deriving (Show,Read)
 
 type PreprocessorFlags = [String]
@@ -121,8 +126,18 @@ preprocess _ modulepath = do
 onException :: (Monad m) => EitherT e m a -> (e -> u) -> EitherT u m a
 onException = flip fmapLT
 
-parse :: ModuleFile -> EitherT ModuleError m ModuleAST
-parse = undefined
+parse :: (MonadIO m) => FilePath -> ModuleFile -> EitherT ModuleError m ModuleAST
+parse modulepath modulefile = do
+    let mode = defaultParseMode {parseFilename = modulepath, fixities = Just baseFixities}
+
+    eitherast <- scriptIO (do
+        parseresult <- return (parseFileContentsWithMode mode modulefile)
+        case parseresult of
+            ParseFailed sourcelocation message -> return (Left (ParserError message))
+            ParseOk ast -> return (Right ast))
+                `onException` ParserError
+
+    hoistEither eitherast
 
 preprocessorflags :: TargetType -> FinalizedPackageDescription -> PreprocessorFlags
 preprocessorflags LibraryTarget finalizedPackageDescription =
