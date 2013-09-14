@@ -11,7 +11,7 @@ import Types (
     Package(Package),
     Version(Version),
     Variant(Variant),
-    Target(Target),TargetType,
+    Target(Target),TargetType(LibraryTarget),
     InstanceNode,Instance(Instance),
     ModuleNode,Module(Module),ModuleName,ModuleAST,
     FinalizedPackageDescription)
@@ -22,6 +22,8 @@ import Web.Neo (
     NeoT,newNode,addNodeLabel,setNodeProperty,newEdge)
 
 import Data.Aeson (toJSON)
+
+import Distribution.PackageDescription (library,libModules)
 
 import Control.Error (
     runEitherT,EitherT,left,
@@ -54,10 +56,10 @@ modules repository inst = runMaybeT (do
 
     finalizedPackageDescription <- getFinalizedPackageDescription repository variant >>= hoistMaybe
 
-    let modulenames = enumModuleNames targettype finalizedPackageDescription
+    modulenames <- return (enumModuleNames targettype finalizedPackageDescription) >>= hoistMaybe
 
     forM modulenames (\modulename -> runEitherT (do
-        
+
         rawmodulefile <- lookupModuleName repository modulename
         modulefile <- preprocess (preprocessorflags finalizedPackageDescription) rawmodulefile
         moduleast <- parse modulefile
@@ -67,8 +69,9 @@ data ModuleError = ModuleError deriving (Show,Read)
 type PreprocessorFlags = [String]
 data ModuleFile = ModuleFile
 
-enumModuleNames :: TargetType -> FinalizedPackageDescription -> [ModuleName]
-enumModuleNames = undefined
+enumModuleNames :: TargetType -> FinalizedPackageDescription -> Maybe [ModuleName]
+enumModuleNames LibraryTarget finalizedPackageDescription =
+    library finalizedPackageDescription >>= return . libModules
 
 lookupModuleName :: Repository -> ModuleName -> EitherT ModuleError m FilePath
 lookupModuleName = undefined
@@ -86,7 +89,7 @@ insertModule :: (Monad m) => ModuleName -> ModuleAST -> InstanceNode -> NeoT m M
 insertModule modulename moduleast instancenode = do
     modulenode <- newNode
     addNodeLabel "Module" modulenode
-    setNodeProperty "modulename" (toJSON modulename) modulenode
+    setNodeProperty "modulename" (toJSON (show modulename)) modulenode
     setNodeProperty "moduleast" (toJSON moduleast) modulenode
     _ <- newEdge "MODULE" instancenode modulenode
     return modulenode
@@ -109,5 +112,11 @@ getFinalizedPackageDescription repository variant = do
     packageDescription <- loadPackageDescription repository version
     return (finalize configuration packageDescription)
 
-finalizationError :: InstanceNode -> NeoT m ()
-finalizationError = undefined
+finalizationError :: (Monad m) => InstanceNode -> NeoT m ()
+finalizationError instancenode = do
+    finalizationerrornode <- newNode
+    addNodeLabel "Error" finalizationerrornode
+    addNodeLabel "FinalizationError" finalizationerrornode
+    _ <- newEdge "ERROR" instancenode finalizationerrornode
+    return ()
+

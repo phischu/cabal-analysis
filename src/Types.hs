@@ -4,6 +4,7 @@ import Web.Neo (Node)
 
 import Distribution.PackageDescription (FlagAssignment,GenericPackageDescription)
 import qualified Distribution.PackageDescription as Cabal (PackageDescription)
+import qualified Distribution.ModuleName as Cabal (ModuleName)
 import Distribution.System (Platform)
 import Distribution.Compiler (CompilerId)
 import qualified Language.Haskell.Exts as HSE (Module)
@@ -22,7 +23,7 @@ data Configuration = Configuration FlagAssignment Platform CompilerId deriving (
 type FinalizedPackageDescription = Cabal.PackageDescription
 data TargetType = LibraryTarget deriving (Show,Read,Eq)
 type PackageDependency = PackageName
-type ModuleName = String
+type ModuleName = Cabal.ModuleName
 type ModuleAST = HSE.Module
 type InstanceDependency = InstanceNode
 
