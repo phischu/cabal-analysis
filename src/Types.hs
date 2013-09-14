@@ -31,6 +31,7 @@ data Version  = Version Package VersionNumber deriving (Show,Read)
 data Variant  = Variant Version Configuration deriving (Show,Read)
 data Target   = Target Variant TargetType [PackageDependency] deriving (Show,Read)
 data Instance = Instance Target [InstanceDependency]
+data Module   = Module Instance ModuleName ModuleAST
 
 type PackageNode  = Node
 type VersionNode  = Node
