@@ -17,7 +17,7 @@ import Types (
     FinalizedPackageDescription,TargetSection(LibrarySection))
 
 import Database.PipesGremlin (
-    PG,previousLabeled,followingLabeled,nodeProperty,gather,scatter)
+    PG,scatter)
 import Web.Neo (
     NeoT,newNode,addNodeLabel,setNodeProperty,newEdge)
 
@@ -34,7 +34,7 @@ import Language.Preprocessor.Cpphs
 import Control.Exception (evaluate)
 import Control.DeepSeq (force)
 
-import Language.Haskell.Exts (parseFileContentsWithMode,SrcLoc)
+import Language.Haskell.Exts (parseFileContentsWithMode)
 import Language.Haskell.Exts.Fixity (baseFixities)
 import Language.Haskell.Exts.Parser (ParseMode(..),defaultParseMode,ParseResult(ParseOk,ParseFailed))
 
@@ -69,7 +69,7 @@ modulePG repository instancenode = do
 modules :: (MonadIO m) => Repository -> Instance -> m (Maybe [Either ModuleError Module])
 modules repository inst = runMaybeT (do
 
-    let (Instance (Target variant@(Variant version _) targettype _) _) = inst
+    let (Instance (Target variant@(Variant version _) LibraryTarget _) _) = inst
 
     finalizedPackageDescription <- getFinalizedPackageDescription repository variant >>= hoistMaybe
     targetSection <- return (library finalizedPackageDescription) >>= hoistMaybe >>= return . LibrarySection
@@ -133,7 +133,7 @@ parse modulepath modulefile = do
     eitherast <- scriptIO (do
         parseresult <- return (parseFileContentsWithMode mode modulefile)
         case parseresult of
-            ParseFailed sourcelocation message -> return (Left (ParserError message))
+            ParseFailed _ message -> return (Left (ParserError message))
             ParseOk ast -> return (Right ast))
                 `onException` ParserError
 
