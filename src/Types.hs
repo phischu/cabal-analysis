@@ -3,7 +3,7 @@ module Types where
 import Web.Neo (Node)
 
 import Distribution.PackageDescription (FlagAssignment,GenericPackageDescription)
-import qualified Distribution.PackageDescription as Cabal (PackageDescription)
+import qualified Distribution.PackageDescription as Cabal (PackageDescription,Library)
 import qualified Distribution.ModuleName as Cabal (ModuleName)
 import Distribution.System (Platform)
 import Distribution.Compiler (CompilerId)
@@ -26,6 +26,7 @@ type PackageDependency = PackageName
 type ModuleName = Cabal.ModuleName
 type ModuleAST = HSE.Module
 type InstanceDependency = InstanceNode
+data TargetSection = LibrarySection Cabal.Library
 
 data Package  = Package PackageName deriving (Show,Read)
 data Version  = Version Package VersionNumber deriving (Show,Read)

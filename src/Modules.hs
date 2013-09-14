@@ -14,7 +14,7 @@ import Types (
     Target(Target),TargetType(LibraryTarget),
     InstanceNode,Instance(Instance),
     ModuleNode,Module(Module),ModuleName,ModuleAST,
-    FinalizedPackageDescription)
+    FinalizedPackageDescription,TargetSection(LibrarySection))
 
 import Database.PipesGremlin (
     PG,previousLabeled,followingLabeled,nodeProperty,gather,scatter)
@@ -24,15 +24,19 @@ import Web.Neo (
 import Data.Aeson (toJSON)
 
 import Distribution.PackageDescription (
-    library,libModules,libBuildInfo,cppOptions)
+    library,libModules,libBuildInfo,cppOptions,hsSourceDirs)
+import Distribution.ModuleName (toFilePath)
 
 import Control.Error (
     runEitherT,EitherT,left,
     runMaybeT,hoistMaybe)
 
-import Control.Monad (mzero,forM)
+import Data.Map ((!))
+import System.Directory (doesFileExist)
+
+import Control.Monad (mzero,forM,filterM)
 import Control.Monad.Trans (lift)
-import Control.Monad.IO.Class (MonadIO)
+import Control.Monad.IO.Class (MonadIO,liftIO)
 
 modulePG :: (MonadIO m) => Repository -> InstanceNode -> PG m (ModuleName,ModuleNode)
 modulePG repository instancenode = do
@@ -53,29 +57,46 @@ modulePG repository instancenode = do
 modules :: (MonadIO m) => Repository -> Instance -> m (Maybe [Either ModuleError Module])
 modules repository inst = runMaybeT (do
 
-    let (Instance (Target variant targettype _) _) = inst
+    let (Instance (Target variant@(Variant version _) targettype _) _) = inst
 
     finalizedPackageDescription <- getFinalizedPackageDescription repository variant >>= hoistMaybe
+    targetSection <- return (library finalizedPackageDescription) >>= hoistMaybe >>= return . LibrarySection
 
-    modulenames <- return (enumModuleNames targettype finalizedPackageDescription) >>= hoistMaybe
+    let modulenames = enumModuleNames targetSection
 
     forM modulenames (\modulename -> runEitherT (do
 
-        rawmodulefile <- lookupModuleName repository modulename
+        rawmodulefile <- lookupModuleName repository version targetSection modulename
         modulefile <- preprocess (preprocessorflags targettype finalizedPackageDescription) rawmodulefile
         moduleast <- parse modulefile
         return (Module inst modulename moduleast))))
 
-data ModuleError = ModuleError deriving (Show,Read)
+data ModuleError =
+    ModuleFileNotFound |
+    MultipleModuleFilesFound
+      deriving (Show,Read)
+
 type PreprocessorFlags = [String]
+
 data ModuleFile = ModuleFile
 
-enumModuleNames :: TargetType -> FinalizedPackageDescription -> Maybe [ModuleName]
-enumModuleNames LibraryTarget finalizedPackageDescription =
-    library finalizedPackageDescription >>= return . libModules
+enumModuleNames :: TargetSection -> [ModuleName]
+enumModuleNames (LibrarySection librarySection) = libModules librarySection
 
-lookupModuleName :: Repository -> ModuleName -> EitherT ModuleError m FilePath
-lookupModuleName = undefined
+lookupModuleName :: (MonadIO m) => Repository -> Version -> TargetSection -> ModuleName -> EitherT ModuleError m FilePath
+lookupModuleName repository version (LibrarySection librarySection) modulename = do
+    let sourcedirs = hsSourceDirs (libBuildInfo librarySection)
+        (Version (Package packagename) versionnumber) = version
+        packagepath = repository ! packagename ! versionnumber
+        potentialPaths = do
+            directory <- sourcedirs
+            extension <- [".hs",".lhs"]
+            return (packagepath ++ directory ++ "/" ++ toFilePath modulename ++ extension)
+    modulepaths <- liftIO (filterM doesFileExist potentialPaths)
+    case modulepaths of
+        [] -> left ModuleFileNotFound
+        [modulepath] -> return modulepath
+        _ -> left MultipleModuleFilesFound
 
 preprocess :: PreprocessorFlags -> FilePath -> EitherT ModuleError m ModuleFile
 preprocess = undefined
