@@ -23,7 +23,8 @@ import Web.Neo (
 
 import Data.Aeson (toJSON)
 
-import Distribution.PackageDescription (library,libModules)
+import Distribution.PackageDescription (
+    library,libModules,libBuildInfo,cppOptions)
 
 import Control.Error (
     runEitherT,EitherT,left,
@@ -61,7 +62,7 @@ modules repository inst = runMaybeT (do
     forM modulenames (\modulename -> runEitherT (do
 
         rawmodulefile <- lookupModuleName repository modulename
-        modulefile <- preprocess (preprocessorflags finalizedPackageDescription) rawmodulefile
+        modulefile <- preprocess (preprocessorflags targettype finalizedPackageDescription) rawmodulefile
         moduleast <- parse modulefile
         return (Module inst modulename moduleast))))
 
@@ -82,8 +83,9 @@ preprocess = undefined
 parse :: ModuleFile -> EitherT ModuleError m ModuleAST
 parse = undefined
 
-preprocessorflags :: FinalizedPackageDescription -> PreprocessorFlags
-preprocessorflags = undefined
+preprocessorflags :: TargetType -> FinalizedPackageDescription -> PreprocessorFlags
+preprocessorflags LibraryTarget finalizedPackageDescription =
+    maybe [] (cppOptions . libBuildInfo) (library finalizedPackageDescription)
 
 insertModule :: (Monad m) => ModuleName -> ModuleAST -> InstanceNode -> NeoT m ModuleNode
 insertModule modulename moduleast instancenode = do
