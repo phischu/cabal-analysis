@@ -8,8 +8,6 @@ import Database.PipesGremlin (PG,scatter)
 
 import Data.Aeson (toJSON)
 
-import Data.Version (showVersion)
-
 import Control.Monad.Trans (lift)
 
 import Data.Map (keys,(!))
@@ -31,6 +29,6 @@ insertVersion :: (Monad m) => VersionNumber -> PackageNode -> NeoT m VersionNode
 insertVersion versionnumber packagenode = do
     versionnode <- newNode
     addNodeLabel "Version" versionnode
-    setNodeProperty "versionnumber" (toJSON (showVersion versionnumber)) versionnode
+    setNodeProperty "versionnumber" (toJSON (show versionnumber)) versionnode
     _ <- newEdge "VERSION" packagenode versionnode
     return versionnode
