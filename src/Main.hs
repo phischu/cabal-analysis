@@ -34,7 +34,7 @@ gatherInstances =
     instancePG >>=
     return . show
 
-gatherModules :: (Monad m) => Repository -> PG m String
+gatherModules :: (MonadIO m) => Repository -> PG m String
 gatherModules repository =
     nodesByLabel "Instance" >>=
     modulePG repository >>=
