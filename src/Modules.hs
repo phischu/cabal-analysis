@@ -27,9 +27,17 @@ import Distribution.PackageDescription (
     library,libModules,libBuildInfo,cppOptions,hsSourceDirs)
 import Distribution.ModuleName (toFilePath)
 
+import Language.Preprocessor.Cpphs
+    (runCpphs,
+    defaultCpphsOptions,CpphsOptions(boolopts),
+    defaultBoolOptions,BoolOptions(warnings))
+import Control.Exception (evaluate)
+import Control.DeepSeq (force)
+
 import Control.Error (
     runEitherT,EitherT,left,
-    runMaybeT,hoistMaybe)
+    runMaybeT,hoistMaybe,
+    scriptIO,fmapLT)
 
 import Data.Map ((!))
 import System.Directory (doesFileExist)
@@ -66,19 +74,20 @@ modules repository inst = runMaybeT (do
 
     forM modulenames (\modulename -> runEitherT (do
 
-        rawmodulefile <- lookupModuleName repository version targetSection modulename
-        modulefile <- preprocess (preprocessorflags targettype finalizedPackageDescription) rawmodulefile
+        modulefilepath <- lookupModuleName repository version targetSection modulename
+        modulefile <- preprocess targetSection modulefilepath
         moduleast <- parse modulefile
         return (Module inst modulename moduleast))))
 
 data ModuleError =
     ModuleFileNotFound |
-    MultipleModuleFilesFound
+    MultipleModuleFilesFound |
+    PreprocessorError String
       deriving (Show,Read)
 
 type PreprocessorFlags = [String]
 
-data ModuleFile = ModuleFile
+type ModuleFile = String
 
 enumModuleNames :: TargetSection -> [ModuleName]
 enumModuleNames (LibrarySection librarySection) = libModules librarySection
@@ -98,8 +107,19 @@ lookupModuleName repository version (LibrarySection librarySection) modulename =
         [modulepath] -> return modulepath
         _ -> left MultipleModuleFilesFound
 
-preprocess :: PreprocessorFlags -> FilePath -> EitherT ModuleError m ModuleFile
-preprocess = undefined
+preprocess :: (MonadIO m) => TargetSection -> FilePath -> EitherT ModuleError m ModuleFile
+preprocess _ modulepath = do
+    let cpphsoptions = defaultCpphsOptions {boolopts = booloptions }
+        booloptions = defaultBoolOptions {warnings = False}
+
+    scriptIO (do
+        rawsource <- readFile modulepath
+        sourcecode <- runCpphs cpphsoptions modulepath rawsource
+        evaluate (force sourcecode))
+            `onException` PreprocessorError
+
+onException :: (Monad m) => EitherT e m a -> (e -> u) -> EitherT u m a
+onException = flip fmapLT
 
 parse :: ModuleFile -> EitherT ModuleError m ModuleAST
 parse = undefined

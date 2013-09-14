@@ -38,9 +38,11 @@ executable cabal-analysis
                        process,
                        pipes,
                        errors,
+                       deepseq,
                        aeson,
                        text,
                        haskell-src-exts,
+                       cpphs,
                        haskell-neo,
                        pipes-gremlin
   hs-source-dirs:      src
