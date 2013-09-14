@@ -26,7 +26,8 @@ executable cabal-analysis
                        Queries,
                        Instances,
                        Modules,
-                       Modules.JSON
+                       Modules.JSON,
+                       Modules.RecoverInstance
   build-depends:       base,
                        containers,
                        mtl,
