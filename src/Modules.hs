@@ -69,10 +69,11 @@ modulePG repository instancenode = do
 modules :: (MonadIO m) => Repository -> Instance -> m (Maybe [Either ModuleError Module])
 modules repository inst = runMaybeT (do
 
-    let (Instance (Target variant@(Variant version _) LibraryTarget _) _) = inst
+    let (Instance (Target variant@(Variant version _) targettype _) _) = inst
 
     finalizedPackageDescription <- getFinalizedPackageDescription repository variant >>= hoistMaybe
-    targetSection <- return (library finalizedPackageDescription) >>= hoistMaybe >>= return . LibrarySection
+    targetSection <- case targettype of
+        LibraryTarget -> hoistMaybe (library finalizedPackageDescription) >>= return . LibrarySection
 
     let modulenames = enumModuleNames targetSection
 
