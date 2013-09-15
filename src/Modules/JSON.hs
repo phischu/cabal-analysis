@@ -1,4 +1,5 @@
 {-# LANGUAGE StandaloneDeriving, DeriveGeneric #-}
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 module Modules.JSON where
 
 import Language.Haskell.Exts.Syntax (

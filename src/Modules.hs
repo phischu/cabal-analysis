@@ -21,7 +21,7 @@ import Database.PipesGremlin (
 import Web.Neo (
     NeoT,newNode,addNodeLabel,setNodeProperty,newEdge)
 
-import Data.Aeson (toJSON)
+import Data.Aeson (toJSON,encode)
 
 import Distribution.PackageDescription (
     library,libModules,libBuildInfo,cppOptions,hsSourceDirs)
@@ -148,8 +148,8 @@ insertModule :: (Monad m) => ModuleName -> ModuleAST -> InstanceNode -> NeoT m M
 insertModule modulename moduleast instancenode = do
     modulenode <- newNode
     addNodeLabel "Module" modulenode
-    setNodeProperty "modulename" (toJSON (show modulename)) modulenode
-    setNodeProperty "moduleast" (toJSON moduleast) modulenode
+    setNodeProperty "modulename" (show modulename) modulenode
+    setNodeProperty "moduleast" (encode (toJSON moduleast)) modulenode
     _ <- newEdge "MODULE" instancenode modulenode
     return modulenode
 
@@ -158,7 +158,7 @@ insertModuleError moduleerror instancenode = do
     moduleerrornode <- newNode
     addNodeLabel "Error" moduleerrornode
     addNodeLabel "ModuleError" moduleerrornode
-    setNodeProperty "error" (toJSON (show moduleerror)) moduleerrornode
+    setNodeProperty "error" (show moduleerror) moduleerrornode
     _ <- newEdge "ERROR" instancenode moduleerrornode
     return ()
 
