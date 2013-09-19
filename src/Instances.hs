@@ -20,7 +20,7 @@ import Data.Set (Set,member,insert)
 import Data.List (nub)
 
 instancePG :: (Monad m) => TargetNode ->  PG (StateT (Set Integer) m) InstanceNode
-instancePG targetnode = limit 5 (do
+instancePG targetnode = limit 1 (do
 
     visitedTargetNodeIds <- lift ( lift (lift get))
     lift (lift (lift (put (insert (nodeId targetnode) visitedTargetNodeIds))))
