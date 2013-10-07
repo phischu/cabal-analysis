@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Main where
 
+import Types (Symbol(Symbol))
 import Database (resetDatabase)
 import Types (Repository)
 import Repository (loadRepository)
@@ -42,7 +43,7 @@ gatherSymbols repository =
     modulePG repository >>=
     declarationPG >>=
     symbolPG >>=
-    return . show
+    return . show . (\(Symbol _ symbolname,_)->symbolname)
 
 main ::IO ()
 main = do
