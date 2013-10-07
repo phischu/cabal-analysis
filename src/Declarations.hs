@@ -23,8 +23,8 @@ declarationPG (modul,modulenode) = do
     return (declaration,declarationnode)
 
 declarations :: Module -> [Declaration]
-declarations modul@(Module _ _ (HSE.Module _ _ _ _ _ _ declarations)) =
-    map (Declaration modul) declarations
+declarations modul@(Module _ _ (HSE.Module _ _ _ _ _ _ decls)) =
+    map (Declaration modul) decls
 declarations _ =
     []
 
