@@ -28,7 +28,8 @@ executable cabal-analysis
                        Modules,
                        Modules.JSON,
                        Modules.RecoverInstance,
-                       Declarations
+                       Declarations,
+                       Symbols
   build-depends:       base,
                        containers,
                        mtl,

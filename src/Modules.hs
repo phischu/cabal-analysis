@@ -21,8 +21,6 @@ import Database.PipesGremlin (
 import Web.Neo (
     NeoT,newNode,addNodeLabel,setNodeProperty,newEdge)
 
-import Data.Aeson (toJSON,encode)
-
 import Distribution.PackageDescription (
     library,libModules,libBuildInfo,cppOptions,hsSourceDirs)
 import Distribution.ModuleName (toFilePath)
@@ -34,8 +32,8 @@ import Language.Preprocessor.Cpphs
 import Control.Exception (evaluate)
 import Control.DeepSeq (force)
 
-import Language.Haskell.Exts (parseFileContentsWithMode)
-import Language.Haskell.Exts.Fixity (baseFixities)
+import Language.Haskell.Exts.Annotated (parseFileContentsWithMode)
+import Language.Haskell.Exts.Annotated.Fixity (baseFixities)
 import Language.Haskell.Exts.Parser (ParseMode(..),defaultParseMode,ParseResult(ParseOk,ParseFailed))
 
 import Control.Error (
@@ -149,7 +147,7 @@ insertModule modulename moduleast instancenode = do
     modulenode <- newNode
     addNodeLabel "Module" modulenode
     setNodeProperty "modulename" (show modulename) modulenode
-    setNodeProperty "moduleast" (encode (toJSON moduleast)) modulenode
+    setNodeProperty "moduleast" (show moduleast) modulenode
     _ <- newEdge "MODULE" instancenode modulenode
     return modulenode
 

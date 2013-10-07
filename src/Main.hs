@@ -11,6 +11,7 @@ import Targets (targetPG)
 import Instances (instancePG)
 import Modules (modulePG)
 import Declarations (declarationPG)
+import Symbols (symbolPG)
 import Queries ()
 
 import Database.PipesGremlin (PG,printPG,gather,scatter,nodesByLabel)
@@ -35,11 +36,12 @@ gatherInstances =
     instancePG >>=
     return . show
 
-gatherDeclarations :: (MonadIO m) => Repository -> PG m String
-gatherDeclarations repository =
+gatherSymbols :: (MonadIO m) => Repository -> PG m String
+gatherSymbols repository =
     nodesByLabel "Instance" >>=
     modulePG repository >>=
     declarationPG >>=
+    symbolPG >>=
     return . show
 
 main ::IO ()
@@ -48,5 +50,5 @@ main = do
     resetDatabase
     printPG (gatherTargets repository)
     runStateT (printPG gatherInstances) empty >>= print
-    printPG (gatherDeclarations repository)
+    printPG (gatherSymbols repository)
     return ()

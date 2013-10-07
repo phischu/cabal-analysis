@@ -7,9 +7,7 @@ import Modules.JSON ()
 import Database.PipesGremlin (PG,scatter)
 import Web.Neo (NeoT,newNode,addNodeLabel,setNodeProperty,newEdge)
 
-import qualified Language.Haskell.Exts as HSE (Module(Module))
-
-import Data.Aeson (toJSON,encode)
+import qualified Language.Haskell.Exts.Annotated as HSE (Module(Module))
 
 import Control.Monad.Trans (lift)
 
@@ -23,7 +21,7 @@ declarationPG (modul,modulenode) = do
     return (declaration,declarationnode)
 
 declarations :: Module -> [Declaration]
-declarations modul@(Module _ _ (HSE.Module _ _ _ _ _ _ decls)) =
+declarations modul@(Module _ _ (HSE.Module _ _ _ _ decls)) =
     map (Declaration modul) decls
 declarations _ =
     []
@@ -32,6 +30,6 @@ insertDeclaration :: (Monad m) => DeclarationAST -> ModuleNode -> NeoT m Declara
 insertDeclaration declarationast modulenode = do
     declarationnode <- newNode
     addNodeLabel "Declaration" declarationnode
-    setNodeProperty "declarationast" (encode (toJSON declarationast)) declarationnode
+    setNodeProperty "declarationast" (show declarationast) declarationnode
     _ <- newEdge "DECLARATION" modulenode declarationnode
     return declarationnode
