@@ -27,7 +27,8 @@ executable cabal-analysis
                        Instances,
                        Modules,
                        Modules.JSON,
-                       Modules.RecoverInstance
+                       Modules.RecoverInstance,
+                       Declarations
   build-depends:       base,
                        containers,
                        mtl,
@@ -42,6 +43,7 @@ executable cabal-analysis
                        aeson,
                        text,
                        haskell-src-exts,
+                       haskell-names,
                        cpphs,
                        haskell-neo,
                        pipes-gremlin

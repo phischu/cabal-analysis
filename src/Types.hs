@@ -7,7 +7,7 @@ import qualified Distribution.PackageDescription as Cabal (PackageDescription,Li
 import qualified Distribution.ModuleName as Cabal (ModuleName)
 import Distribution.System (Platform)
 import Distribution.Compiler (CompilerId)
-import qualified Language.Haskell.Exts as HSE (Module)
+import qualified Language.Haskell.Exts as HSE (Module,Decl)
 
 import qualified Data.Version as Version (Version)
 
@@ -27,17 +27,20 @@ type ModuleName = Cabal.ModuleName
 type ModuleAST = HSE.Module
 type InstanceDependency = InstanceNode
 data TargetSection = LibrarySection Cabal.Library
+type DeclarationAST = HSE.Decl
 
-data Package  = Package PackageName deriving (Show,Read)
-data Version  = Version Package VersionNumber deriving (Show,Read)
-data Variant  = Variant Version Configuration deriving (Show,Read)
-data Target   = Target Variant TargetType [PackageDependency] deriving (Show,Read)
-data Instance = Instance Target [InstanceDependency]
-data Module   = Module Instance ModuleName ModuleAST
+data Package     = Package PackageName deriving (Show,Read)
+data Version     = Version Package VersionNumber deriving (Show,Read)
+data Variant     = Variant Version Configuration deriving (Show,Read)
+data Target      = Target Variant TargetType [PackageDependency] deriving (Show,Read)
+data Instance    = Instance Target [InstanceDependency] deriving (Show)
+data Module      = Module Instance ModuleName ModuleAST deriving (Show)
+data Declaration = Declaration Module DeclarationAST deriving (Show)
 
-type PackageNode  = Node
-type VersionNode  = Node
-type VariantNode  = Node
-type TargetNode   = Node
-type InstanceNode = Node
-type ModuleNode   = Node
+type PackageNode     = Node
+type VersionNode     = Node
+type VariantNode     = Node
+type TargetNode      = Node
+type InstanceNode    = Node
+type ModuleNode      = Node
+type DeclarationNode = Node

@@ -50,7 +50,7 @@ import Control.Monad (mzero,forM,filterM)
 import Control.Monad.Trans (lift)
 import Control.Monad.IO.Class (MonadIO,liftIO)
 
-modulePG :: (MonadIO m) => Repository -> InstanceNode -> PG m (ModuleName,ModuleNode)
+modulePG :: (MonadIO m) => Repository -> InstanceNode -> PG m (Module,ModuleNode)
 modulePG repository instancenode = do
     inst <- recoverInstance instancenode
     
@@ -61,9 +61,9 @@ modulePG repository instancenode = do
 
     either
         (\e -> lift (insertModuleError e instancenode) >> mzero)
-        (\(Module _ modulename moduleast) -> do
+        (\modul@(Module _ modulename moduleast) -> do
             modulenode <- lift (insertModule modulename moduleast instancenode)
-            return (modulename,modulenode))
+            return (modul,modulenode))
         eithermodule
 
 modules :: (MonadIO m) => Repository -> Instance -> m (Maybe [Either ModuleError Module])
