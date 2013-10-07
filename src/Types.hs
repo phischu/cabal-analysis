@@ -27,7 +27,7 @@ type ModuleName = Cabal.ModuleName
 type ModuleAST = HSE.Module HSE.SrcSpanInfo
 type InstanceDependency = InstanceNode
 data TargetSection = LibrarySection Cabal.Library
-type DeclarationAST = HSE.Decl HSE.SrcSpanInfo
+type DeclarationAST = HSE.Decl ()
 type SymbolName = String
 
 data Package     = Package PackageName deriving (Show,Read)

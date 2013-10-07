@@ -28,10 +28,10 @@ symbols declaration@(Declaration _ declarationast) = do
     symbolname <- typesymbols declarationast ++ valuesymbols declarationast
     return (Symbol declaration (nameToString symbolname))
 
-typesymbols :: DeclarationAST -> [Name SrcSpanInfo]
+typesymbols :: DeclarationAST -> [Name ()]
 typesymbols = maybe [] ((:[]) . fst . splitDeclHead) . getDeclHead
 
-valuesymbols :: DeclarationAST -> [Name SrcSpanInfo]
+valuesymbols :: DeclarationAST -> [Name ()]
 valuesymbols = getBound (GlobalSymbolTable.empty)
 
 getDeclHead :: Decl l -> Maybe (DeclHead l)
