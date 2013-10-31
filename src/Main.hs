@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Main where
 
-import Types (Symbol(Symbol))
+import Types (Module(Module))
 import Database (resetDatabase)
 import Types (Repository)
 import Repository (loadRepository)
@@ -11,7 +11,6 @@ import Variants (variantPG)
 import Targets (targetPG)
 import Instances (instancePG)
 import Modules (modulePG)
-import Declarations (declarationPG)
 import Symbols (symbolPG)
 import Queries ()
 
@@ -37,13 +36,16 @@ gatherInstances =
     instancePG >>=
     return . show
 
-gatherSymbols :: (MonadIO m) => Repository -> PG m String
-gatherSymbols repository =
+gatherModules :: (MonadIO m) => Repository -> PG m String
+gatherModules repository = 
     nodesByLabel "Instance" >>=
     modulePG repository >>=
-    declarationPG >>=
-    symbolPG >>=
-    return . show . (\(Symbol _ symbolname,_)->symbolname)
+    return . show . (\(Module _ modulename _) -> modulename) . fst
+
+gatherSymbols :: (Monad m) => PG m ()
+gatherSymbols =
+    nodesByLabel "Instance" >>=
+    symbolPG
 
 main ::IO ()
 main = do
@@ -51,5 +53,6 @@ main = do
     resetDatabase
     printPG (gatherTargets repository)
     runStateT (printPG gatherInstances) empty >>= print
-    printPG (gatherSymbols repository)
+    printPG (gatherModules repository)
+    printPG gatherSymbols
     return ()

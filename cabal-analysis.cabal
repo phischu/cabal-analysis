@@ -45,6 +45,7 @@ executable cabal-analysis
                        text,
                        haskell-src-exts,
                        haskell-names,
+                       haskell-packages,
                        cpphs,
                        haskell-neo,
                        pipes-gremlin

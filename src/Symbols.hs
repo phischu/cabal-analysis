@@ -1,55 +1,125 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings,TypeFamilies,StandaloneDeriving,FlexibleInstances #-}
 module Symbols where
 
 import Types
-import Modules.JSON ()
 
-import Database.PipesGremlin (PG,scatter)
+import Database.PipesGremlin (PG,followingLabeled,nodeProperty,gather,has,strain)
 import Web.Neo (NeoT,newNode,addNodeLabel,setNodeProperty,newEdge)
 
-import Language.Haskell.Names.SyntaxUtils (splitDeclHead,nameToString)
-import Language.Haskell.Names.GetBound (getBound)
-import qualified Language.Haskell.Names.GlobalSymbolTable as GlobalSymbolTable (empty)
-import Language.Haskell.Exts.Annotated (Decl(..),DeclHead,Name,SrcSpanInfo)
+import Language.Haskell.Exts.Annotated (SrcSpanInfo)
+import Language.Haskell.Exts.Extension (Language(Haskell2010))
+
+import Language.Haskell.Names (
+    computeInterfaces,Symbols(Symbols),
+    SymTypeInfo,SymValueInfo,Error,
+    OrigName(OrigName),GName(GName))
+import Distribution.HaskellSuite.Modules (
+    MonadModule(..),ModName(modToString),convertModuleName)
+
+import Data.Set (toList,fromList)
+import Data.Either (partitionEithers)
+import Text.Read (readMaybe)
 
 import Control.Monad.Trans (lift)
+import Control.Monad.Trans.Reader (ReaderT,runReaderT,ask)
+import Control.Monad (forM,forM_,(>=>))
 
-symbolPG :: (Monad m) => (Declaration,DeclarationNode) -> PG m (Symbol,SymbolNode)
-symbolPG (declaration,declarationnode) = do
+symbolPG :: (Monad m) => InstanceNode -> PG m ()
+symbolPG instancenode = do
 
-    symbol@(Symbol _ symbolname) <- scatter (symbols declaration)
+    moduleasts <- return (recoverModuleASTs instancenode)
 
-    symbolnode <- lift (insertSymbol symbolname declarationnode)
+    errors <- runNeoModuleT instancenode (computeInterfaces Haskell2010 [] moduleasts)
 
-    return (symbol,symbolnode)
+    forM (toList errors) (\err -> lift (insertError err instancenode))
 
-symbols :: Declaration -> [Symbol]
-symbols declaration@(Declaration _ declarationast) = do
-    symbolname <- typesymbols declarationast ++ valuesymbols declarationast
-    return (Symbol declaration (nameToString symbolname))
+    return ()
 
-typesymbols :: DeclarationAST -> [Name ()]
-typesymbols = maybe [] ((:[]) . fst . splitDeclHead) . getDeclHead
+recoverModuleASTs :: InstanceNode -> [ModuleAST]
+recoverModuleASTs = undefined
 
-valuesymbols :: DeclarationAST -> [Name ()]
-valuesymbols = getBound (GlobalSymbolTable.empty)
+newtype NeoModuleT m a = NeoModuleT { unNeoModuleT :: ReaderT InstanceNode (PG m) a}
 
-getDeclHead :: Decl l -> Maybe (DeclHead l)
-getDeclHead (TypeDecl _ dhead _) = Just dhead
-getDeclHead (TypeFamDecl _ dhead _) = Just dhead
-getDeclHead (DataDecl _ _ _ dhead _ _) = Just dhead
-getDeclHead (GDataDecl _ _ _ dhead _ _ _) = Just dhead
-getDeclHead (DataFamDecl _ _ dhead _) = Just dhead
-getDeclHead (ClassDecl _ _ dhead _ _) = Just dhead
-getDeclHead _ = Nothing
+instance (Monad m) => Monad (NeoModuleT m) where
+    ma >>= amb = NeoModuleT (unNeoModuleT ma >>= unNeoModuleT . amb)
+    return = NeoModuleT . return
 
-insertSymbol :: (Monad m) => SymbolName -> DeclarationNode -> NeoT m SymbolNode
-insertSymbol symbolname declarationnode = do
+instance (Monad m) => MonadModule (NeoModuleT m) where
+    type ModuleInfo (NeoModuleT m) = Symbols
+    lookupInCache modulename = NeoModuleT (do
+        instancenode <- ask
+        exportsnodes <- lift (gather (return instancenode >>= instanceModule (modToString modulename) >>= moduleExports))
+        case exportsnodes of
+            [exportsnode] -> lift (do
+                (symvalueinfos,symtypeinfos) <- fmap partitionEithers (gather (
+                    exportedSymbol exportsnode >>=
+                    recoverSymbol))
+                return (Just (Symbols (fromList symvalueinfos) (fromList symtypeinfos))))
+            _ -> return Nothing)
+    insertInCache modulename symbols = NeoModuleT (do
+        instancenode <- ask
+        lift (do
+            modulenode <- instanceModule (modToString modulename) instancenode
+            lift (insertExports modulenode >>= insertSymbols symbols)))
+    getPackages   = return []
+    readModuleInfo filepaths modulename = error
+        ("not implemented readModuleInfo: "++show filepaths++" "++modToString modulename)
+
+instanceModule :: (Monad m) => String -> InstanceNode -> PG m ModuleNode
+instanceModule modulenamestring = do
+    let modulename = convertModuleName modulenamestring
+    followingLabeled "MODULE" >=> has (
+        nodeProperty "modulename" >=>
+        strain ((==) (show modulename)))
+
+moduleExports :: (Monad m) => ModuleNode -> PG m ExportsNode
+moduleExports = followingLabeled "EXPORTS"
+
+exportedSymbol :: (Monad m) => ExportsNode -> PG m SymbolNode
+exportedSymbol = followingLabeled "EXPORT"
+
+recoverSymbol :: SymbolNode -> PG m (Either (SymValueInfo OrigName) (SymTypeInfo OrigName))
+recoverSymbol = undefined
+
+runNeoModuleT :: InstanceNode -> NeoModuleT m a -> PG m a
+runNeoModuleT instancenode = flip runReaderT instancenode . unNeoModuleT
+
+insertError :: (Monad m) => Error SrcSpanInfo -> InstanceNode -> NeoT m ()
+insertError err instancenode = do
+    errornode <- newNode
+    addNodeLabel "NameError" errornode
+    setNodeProperty "error" (show err) errornode
+    _ <- newEdge "NAMEERROR" instancenode errornode
+    return ()
+
+insertExports :: (Monad m) => ModuleNode -> NeoT m ExportsNode
+insertExports modulenode = do
+    exportsnode <- newNode
+    addNodeLabel "Exports" exportsnode
+    _ <- newEdge "EXPORTS" modulenode exportsnode
+    return exportsnode
+
+insertSymbols :: (Monad m) => Symbols -> ExportsNode -> NeoT m ()
+insertSymbols (Symbols valuesymbols typesymbols) exportsnode = do
+    forM_ (toList valuesymbols) (\valuesymbol -> insertValueSymbol valuesymbol exportsnode)
+    forM_ (toList typesymbols) (\typesymbol -> insertTypeSymbol typesymbol exportsnode)
+
+insertValueSymbol :: (Monad m) => SymValueInfo OrigName -> ExportsNode -> NeoT m SymbolNode
+insertValueSymbol = undefined
+
+insertTypeSymbol :: (Monad m) => SymTypeInfo OrigName -> ExportsNode -> NeoT m SymbolNode
+insertTypeSymbol = undefined
+
+deriving instance Read GName
+deriving instance Read OrigName
+
+{-insertSymbol originmodulename symbolname modulenode = do
     symbolnode <- newNode
     addNodeLabel "Symbol" symbolnode
+    setNodeProperty "originmodulename" (show originmodulename) symbolnode
     setNodeProperty "symbolname" symbolname symbolnode
-    _ <- newEdge "DECLARATION" declarationnode symbolnode
+    _ <- newEdge "EXPORT" modulenode symbolnode
     return symbolnode
-
+-}
 
 

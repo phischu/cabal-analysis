@@ -28,6 +28,7 @@ type ModuleAST = HSE.Module HSE.SrcSpanInfo
 type InstanceDependency = InstanceNode
 data TargetSection = LibrarySection Cabal.Library
 type DeclarationAST = HSE.Decl ()
+type OriginModuleName = ModuleName
 type SymbolName = String
 
 data Package     = Package PackageName deriving (Show,Read)
@@ -37,7 +38,7 @@ data Target      = Target Variant TargetType [PackageDependency] deriving (Show,
 data Instance    = Instance Target [InstanceDependency] deriving (Show)
 data Module      = Module Instance ModuleName ModuleAST deriving (Show)
 data Declaration = Declaration Module DeclarationAST deriving (Show)
-data Symbol      = Symbol Declaration SymbolName deriving (Show)
+data Symbol      = Symbol OriginModuleName SymbolName deriving (Show)
 
 type PackageNode     = Node
 type VersionNode     = Node
@@ -46,4 +47,5 @@ type TargetNode      = Node
 type InstanceNode    = Node
 type ModuleNode      = Node
 type DeclarationNode = Node
+type ExportsNode     = Node
 type SymbolNode      = Node
