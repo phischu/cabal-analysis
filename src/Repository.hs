@@ -47,15 +47,15 @@ loadRepository =
 availablePackagesOnHackage :: IO Index
 availablePackagesOnHackage = do
     putStrLn "Downloading Index ..."
-    exists <- doesFileExist "data/00-index.tar"
+    exists <- doesFileExist "data/index.tar"
     when (not exists) (void (do
         createDirectoryIfMissing True "data/"
         void (rawSystem "wget" [
             "-nv",
-            "-O","data/00-index.tar.gz",
-            "hackage.haskell.org/packages/archive/00-index.tar"])
-        rawSystem "gunzip" ["-f","data/00-index.tar.gz"]))
-    hackage <- readHackage' "data/00-index.tar"
+            "-O","data/index.tar.gz",
+            "hackage.haskell.org/packages/index.tar.gz"])
+        rawSystem "gunzip" ["-f","data/index.tar.gz"]))
+    hackage <- readHackage' "data/index.tar"
     return (Map.map Map.keys hackage)
 
 pruneIndex :: [PackageName] -> Index -> Index
