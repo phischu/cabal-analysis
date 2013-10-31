@@ -28,7 +28,7 @@ import Control.Monad (forM,forM_,(>=>))
 symbolPG :: (Monad m) => InstanceNode -> PG m ()
 symbolPG instancenode = do
 
-    moduleasts <- return (recoverModuleASTs instancenode)
+    moduleasts <- recoverModuleASTs instancenode
 
     errors <- runNeoModuleT instancenode (computeInterfaces Haskell2010 [] moduleasts)
 
@@ -36,8 +36,8 @@ symbolPG instancenode = do
 
     return ()
 
-recoverModuleASTs :: InstanceNode -> [ModuleAST]
-recoverModuleASTs = undefined
+recoverModuleASTs :: (Monad m) => InstanceNode -> PG m [ModuleAST]
+recoverModuleASTs = gather . (followingLabeled "Module" >=> nodeProperty "moduleast" >=> return . read)
 
 newtype NeoModuleT m a = NeoModuleT { unNeoModuleT :: ReaderT InstanceNode (PG m) a}
 
