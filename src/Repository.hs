@@ -19,13 +19,13 @@ packagesDigest :: [PackageName]
 packagesDigest = smallPackageSelection
 
 smallPackageSelection :: [PackageName]
-smallPackageSelection = ["base","syb","ghc-prim","integer","rts","integer-simple"]
+smallPackageSelection = ["base","ghc-prim","integer","rts","integer-simple"]
 
 packagesThatMightComeWithGHC :: [PackageName]
 packagesThatMightComeWithGHC = smallPackageSelection ++ [
     "array","bytestring","Cabal","containers","deepseq","directory","filepath",
     "haskell2010","haskell98","hpc","old-locale","old-time","pretty","process",
-    "template-haskell","time","unix","Win32"]
+    "syb","template-haskell","time","unix","Win32"]
 
 packagesThatMightBeInThePlatform :: [PackageName]
 packagesThatMightBeInThePlatform = packagesThatMightComeWithGHC ++ [

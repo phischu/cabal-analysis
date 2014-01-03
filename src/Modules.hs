@@ -35,6 +35,7 @@ import Control.DeepSeq (force)
 import Language.Haskell.Exts.Annotated (parseFileContentsWithMode)
 import Language.Haskell.Exts.Annotated.Fixity (baseFixities)
 import Language.Haskell.Exts.Parser (ParseMode(..),defaultParseMode,ParseResult(ParseOk,ParseFailed))
+import Language.Haskell.Exts.Pretty (prettyPrint)
 
 import Control.Error (
     runEitherT,EitherT,left,
@@ -147,7 +148,7 @@ insertModule modulename moduleast instancenode = do
     modulenode <- newNode
     addNodeLabel "Module" modulenode
     setNodeProperty "modulename" (show modulename) modulenode
-    setNodeProperty "moduleast" (show moduleast) modulenode
+    setNodeProperty "moduleast" (prettyPrint moduleast) modulenode
     _ <- newEdge "MODULE" instancenode modulenode
     return modulenode
 

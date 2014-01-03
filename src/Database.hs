@@ -8,8 +8,8 @@ import Control.Monad (void)
 
 resetDatabase :: IO ()
 resetDatabase = do
-    void (system "neo4j-community-2.0.0-M06/bin/neo4j stop")
-    removeDirectoryRecursive "neo4j-community-2.0.0-M06/data/"
-    createDirectory "neo4j-community-2.0.0-M06/data"
-    void (system "neo4j-community-2.0.0-M06/bin/neo4j start")
+    void (system "neo4j-community-2.0.0/bin/neo4j stop")
+    removeDirectoryRecursive "neo4j-community-2.0.0/data/"
+    createDirectory "neo4j-community-2.0.0/data"
+    void (system "neo4j-community-2.0.0/bin/neo4j start")
     threadDelay 1000000

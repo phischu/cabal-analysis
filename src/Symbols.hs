@@ -4,10 +4,11 @@ module Symbols where
 import Types
 
 import Database.PipesGremlin (PG,followingLabeled,nodeProperty,gather,has,strain)
-import Web.Neo (NeoT,Label,newNode,addNodeLabel,setNodeProperty,newEdge)
+import Web.Neo (NeoT,Label,newNode,addNodeLabel,setNodeProperty,newEdge,nodeId)
 
-import Language.Haskell.Exts.Annotated (SrcSpanInfo,Assoc(..))
+import Language.Haskell.Exts.Annotated (parseModule,SrcSpanInfo,Assoc(..))
 import Language.Haskell.Exts.Extension (Language(Haskell2010))
+import Language.Haskell.Exts.Parser (ParseResult(ParseFailed,ParseOk))
 
 import Language.Haskell.Names (
     computeInterfaces,Symbols(Symbols),SymFixity,
@@ -17,16 +18,25 @@ import Language.Haskell.Names (
 import Distribution.HaskellSuite.Modules (
     MonadModule(..),ModName(modToString),convertModuleName)
 
-import Data.Set (toList,fromList)
+import Data.Set (Set,insert,member,toList,fromList)
 import Data.Either (partitionEithers)
 import Data.Text (Text)
 
 import Control.Monad.Trans (lift)
 import Control.Monad.Trans.Reader (ReaderT,runReaderT,ask)
-import Control.Monad (forM,forM_,(>=>))
+import Control.Monad.Trans.State (StateT,get,put)
+import Control.Monad (forM,forM_,(>=>),mzero,guard,when)
 
-symbolPG :: (Monad m) => InstanceNode -> PG m ()
+symbolPG :: (Monad m) => InstanceNode -> PG (StateT (Set Integer) m) ()
 symbolPG instancenode = do
+
+    visitedInstanceNodeIds <- lift ( lift (lift get))
+    lift (lift (lift (put (insert (nodeId instancenode) visitedInstanceNodeIds))))
+
+    when (nodeId instancenode `member` visitedInstanceNodeIds) mzero
+
+--    instancedependencies <- gather (return instancenode >>= followingLabeled "INSTANCEDEPENDENCY")
+--    forM_ instancedependencies symbolPG
 
     moduleasts <- recoverModuleASTs instancenode
 
@@ -37,7 +47,10 @@ symbolPG instancenode = do
     return ()
 
 recoverModuleASTs :: (Monad m) => InstanceNode -> PG m [ModuleAST]
-recoverModuleASTs = gather . (followingLabeled "Module" >=> nodeProperty "moduleast" >=> return . read)
+recoverModuleASTs = gather . (followingLabeled "MODULE" >=> nodeProperty "moduleast" >=> (\m ->
+    case parseModule m of
+        ParseFailed _ _ -> mzero
+        ParseOk modul -> return modul))
 
 newtype NeoModuleT m a = NeoModuleT { unNeoModuleT :: ReaderT InstanceNode (PG m) a}
 

@@ -42,11 +42,16 @@ gatherModules repository =
     modulePG repository >>=
     return . show . (\(Module _ modulename _) -> modulename) . fst
 
-gatherSymbols :: (Monad m) => PG m ()
+gatherSymbols :: (Monad m) => PG (StateT (Set Integer) m) ()
 gatherSymbols =
     nodesByLabel "Instance" >>=
     symbolPG
 
+main :: IO ()
+main = do
+    runStateT (printPG gatherSymbols) empty >>= print
+    return ()
+{-
 main ::IO ()
 main = do
     repository <- loadRepository
@@ -54,5 +59,4 @@ main = do
     printPG (gatherTargets repository)
     runStateT (printPG gatherInstances) empty >>= print
     printPG (gatherModules repository)
-    printPG gatherSymbols
-    return ()
+-}
