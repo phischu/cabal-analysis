@@ -14,8 +14,47 @@ category:            Web
 build-type:          Simple
 cabal-version:       >=1.10
 
-executable cabal-analysis
-  main-is:             Main.hs
+executable cabal-analysis-modules
+  main-is:             MainModules.hs
+  other-modules:       Database
+                       Types,
+                       Repository,
+                       Packages,
+                       Versions,
+                       Variants,
+                       Targets,
+                       Queries,
+                       Instances,
+                       Modules,
+                       Modules.JSON,
+                       Modules.RecoverInstance,
+                       Declarations,
+                       Symbols
+  build-depends:       base,
+                       containers,
+                       mtl,
+                       transformers,
+                       Cabal,
+                       hackage-db,
+                       directory,
+                       process,
+                       pipes,
+                       errors,
+                       deepseq,
+                       aeson,
+                       text,
+                       haskell-src-exts,
+                       haskell-names,
+                       haskell-packages,
+                       cpphs,
+                       haskell-neo,
+                       pipes-gremlin
+  hs-source-dirs:      src
+  default-language:    Haskell2010
+  ghc-options:         -threaded
+
+executable cabal-analysis-exports
+  main-is:             MainExports.hs
   other-modules:       Database
                        Types,
                        Repository,
