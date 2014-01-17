@@ -148,7 +148,7 @@ insertModule modulename moduleast instancenode = do
     modulenode <- newNode
     addNodeLabel "Module" modulenode
     setNodeProperty "modulename" (show modulename) modulenode
-    setNodeProperty "moduleast" (prettyPrint moduleast) modulenode
+    setNodeProperty "modulesource" (prettyPrint moduleast) modulenode
     _ <- newEdge "MODULE" instancenode modulenode
     return modulenode
 

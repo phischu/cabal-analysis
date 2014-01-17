@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings,TypeFamilies,StandaloneDeriving,FlexibleInstances #-}
-module Symbols where
+module Exports where
 
 import Types
 
@@ -27,16 +27,16 @@ import Control.Monad.Trans.Reader (ReaderT,runReaderT,ask)
 import Control.Monad.Trans.State (StateT,get,put)
 import Control.Monad (forM,forM_,(>=>),mzero,guard,when)
 
-symbolPG :: (Monad m) => InstanceNode -> PG (StateT (Set Integer) m) ()
-symbolPG instancenode = do
+exportsPG :: (Monad m) => InstanceNode -> PG (StateT (Set Integer) m) ()
+exportsPG instancenode = do
 
     visitedInstanceNodeIds <- lift ( lift (lift get))
     lift (lift (lift (put (insert (nodeId instancenode) visitedInstanceNodeIds))))
 
     when (nodeId instancenode `member` visitedInstanceNodeIds) mzero
 
---    instancedependencies <- gather (return instancenode >>= followingLabeled "INSTANCEDEPENDENCY")
---    forM_ instancedependencies symbolPG
+    instancedependencies <- gather (return instancenode >>= followingLabeled "INSTANCEDEPENDENCY")
+    forM_ instancedependencies exportsPG
 
     moduleasts <- recoverModuleASTs instancenode
 
@@ -47,7 +47,7 @@ symbolPG instancenode = do
     return ()
 
 recoverModuleASTs :: (Monad m) => InstanceNode -> PG m [ModuleAST]
-recoverModuleASTs = gather . (followingLabeled "MODULE" >=> nodeProperty "moduleast" >=> (\m ->
+recoverModuleASTs = gather . (followingLabeled "MODULE" >=> nodeProperty "modulesource" >=> (\m ->
     case parseModule m of
         ParseFailed _ _ -> mzero
         ParseOk modul -> return modul))

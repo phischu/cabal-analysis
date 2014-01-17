@@ -29,7 +29,7 @@ executable cabal-analysis-modules
                        Modules.JSON,
                        Modules.RecoverInstance,
                        Declarations,
-                       Symbols
+                       Exports
   build-depends:       base,
                        containers,
                        mtl,
@@ -55,20 +55,7 @@ executable cabal-analysis-modules
 
 executable cabal-analysis-exports
   main-is:             MainExports.hs
-  other-modules:       Database
-                       Types,
-                       Repository,
-                       Packages,
-                       Versions,
-                       Variants,
-                       Targets,
-                       Queries,
-                       Instances,
-                       Modules,
-                       Modules.JSON,
-                       Modules.RecoverInstance,
-                       Declarations,
-                       Symbols
+  other-modules:       Exports
   build-depends:       base,
                        containers,
                        mtl,

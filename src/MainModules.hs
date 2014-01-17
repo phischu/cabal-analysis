@@ -11,8 +11,6 @@ import Variants (variantPG)
 import Targets (targetPG)
 import Instances (instancePG)
 import Modules (modulePG)
-import Symbols (symbolPG)
-import Queries ()
 
 import Database.PipesGremlin (PG,printPG,gather,scatter,nodesByLabel)
 
