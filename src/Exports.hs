@@ -35,8 +35,8 @@ exportsPG instancenode = do
 
     when (nodeId instancenode `member` visitedInstanceNodeIds) mzero
 
-    instancedependencies <- gather (return instancenode >>= followingLabeled "INSTANCEDEPENDENCY")
-    forM_ instancedependencies exportsPG
+ --   instancedependencies <- gather (return instancenode >>= followingLabeled "INSTANCEDEPENDENCY")
+ --   forM_ instancedependencies exportsPG
 
     moduleasts <- recoverModuleASTs instancenode
 
